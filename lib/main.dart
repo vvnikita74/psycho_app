@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:psycho_app/pages/loading.dart';
 
 import 'config.dart';
@@ -19,14 +18,11 @@ class App extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: Config.backgroundColor,
         textTheme: TextTheme(
-          headlineMedium: GoogleFonts.rubik(
-            color: Colors.white,
-            height: 1.0,
-            fontWeight: FontWeight.w700,
-          ),
+          headlineMedium: Config.headlineStyle,
+          headlineSmall: Config.headlineStyle,
         ),
       ),
-      home: Scaffold(body: SafeArea(child: const LoadingPage())),
+      home: LoadingPage(),
       debugShowCheckedModeBanner: false,
     );
   }

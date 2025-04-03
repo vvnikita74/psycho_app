@@ -24,11 +24,15 @@ class _LoadingPageState extends State<LoadingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Хорошего\nнастроения',
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.headlineMedium,
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Text(
+            'Хорошего\nнастроения',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+        ),
       ),
     );
   }
