@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:psycho_app/config.dart';
 
+import 'dart:convert';
+
 // TODO: Вынести в отдельный файл или вообще убрать
 enum FieldType { text, radio }
 
 class FormFieldConfig {
   final String label;
-  final bool obscureText;
-  final TextInputType? keyboardType;
   final String fieldKey;
   final FieldType fieldType;
+  final bool? obscureText;
+  final TextInputType? keyboardType;
+  final TextInputAction? inputAction;
 
   FormFieldConfig({
     required this.label,
     required this.fieldKey,
-    this.obscureText = false,
-    this.fieldType = FieldType.text,
+    this.obscureText,
+    this.inputAction,
     this.keyboardType,
+    this.fieldType = FieldType.text,
   });
 }
 
@@ -28,29 +32,56 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final Map<String, String> formValues = {};
   final List<FormFieldConfig> formFields = [
-    FormFieldConfig(label: 'Как к вам обращаться?', fieldKey: 'name'),
-    FormFieldConfig(label: 'Сколько вам лет?', fieldKey: 'age'),
-    FormFieldConfig(label: 'Кто вы?', fieldKey: 'sex'),
+    FormFieldConfig(
+      label: 'Как к вам обращаться?',
+      fieldKey: 'name',
+      inputAction: TextInputAction.next,
+    ),
+    FormFieldConfig(
+      label: 'Сколько вам лет?',
+      fieldKey: 'age',
+      inputAction: TextInputAction.next,
+    ),
+    FormFieldConfig(
+      label: 'Кто вы?',
+      fieldKey: 'sex',
+      inputAction: TextInputAction.done,
+    ),
   ];
 
   int currentFieldIndex = 0;
   final textController = TextEditingController();
 
+  void _handleSubmit() {
+    final formJson = jsonEncode(formValues);
+    debugPrint('Form data: $formJson');
+  }
+
   void _nextField() {
-    if (currentFieldIndex < formFields.length) {
+    formValues[formFields[currentFieldIndex].fieldKey] = textController.text;
+
+    if (currentFieldIndex < formFields.length - 1) {
       setState(() {
-        textController.clear();
         currentFieldIndex++;
+        textController.text =
+            formValues[formFields[currentFieldIndex].fieldKey] ?? '';
       });
+    } else {
+      _handleSubmit();
     }
   }
 
   void _prevField() {
+    formValues[formFields[currentFieldIndex].fieldKey] = textController.text;
+
     if (currentFieldIndex != 0) {
       setState(() {
         textController.clear();
         currentFieldIndex--;
+        textController.text =
+            formValues[formFields[currentFieldIndex].fieldKey] ?? '';
       });
     }
   }
@@ -69,7 +100,7 @@ class _RegisterPageState extends State<RegisterPage> {
           padding: Config.contentPadding,
           child: Stack(
             children: [
-              RegisterField(
+              RegisterTextField(
                 label: formFields[currentFieldIndex].label,
                 controller: textController,
               ),
@@ -132,15 +163,17 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 }
 
-class RegisterField extends StatelessWidget {
-  const RegisterField({
+class RegisterTextField extends StatelessWidget {
+  const RegisterTextField({
     super.key,
     required this.label,
     this.controller,
     this.obscureText = false,
+    this.inputAction = TextInputAction.done,
     this.keyboardType,
   });
 
+  final TextInputAction inputAction;
   final TextEditingController? controller;
   final String label;
   final bool obscureText;
@@ -169,6 +202,7 @@ class RegisterField extends StatelessWidget {
           alignment: FractionalOffset.center,
           child: TextField(
             controller: controller,
+            textInputAction: inputAction,
             style: textTheme.headlineSmall,
             textAlign: TextAlign.center,
             keyboardType: keyboardType,
