@@ -1,26 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:psycho_app/config.dart';
 
 import 'dart:convert';
 
-// TODO: Вынести в отдельный файл или вообще убрать
 enum FieldType { text, radio }
 
-class FormFieldConfig {
+class RadioField {
+  final String label;
+  final String value;
+
+  RadioField({required this.label, required this.value});
+}
+
+class RegisterFieldConfig {
   final String label;
   final String fieldKey;
   final FieldType fieldType;
+
+  RegisterFieldConfig({
+    required this.fieldType,
+    required this.label,
+    required this.fieldKey,
+  });
+}
+
+class RadioFieldConfig extends RegisterFieldConfig {
+  final List<RadioField> fields;
+
+  RadioFieldConfig({
+    super.fieldType = FieldType.radio,
+    required super.fieldKey,
+    required super.label,
+    required this.fields,
+  });
+}
+
+class TextFieldConfig extends RegisterFieldConfig {
   final bool? obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? inputAction;
+  final List<TextInputFormatter>? inputFormatters;
 
-  FormFieldConfig({
-    required this.label,
-    required this.fieldKey,
+  TextFieldConfig({
+    super.fieldType = FieldType.text,
+    required super.label,
+    required super.fieldKey,
     this.obscureText,
     this.inputAction,
     this.keyboardType,
-    this.fieldType = FieldType.text,
+    this.inputFormatters,
   });
 }
 
@@ -33,21 +63,30 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final Map<String, String> formValues = {};
-  final List<FormFieldConfig> formFields = [
-    FormFieldConfig(
+  final List<RegisterFieldConfig> formFields = [
+    TextFieldConfig(
       label: 'Как к вам обращаться?',
       fieldKey: 'name',
       inputAction: TextInputAction.next,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Zа-яА-Я]')),
+      ],
     ),
-    FormFieldConfig(
+    TextFieldConfig(
       label: 'Сколько вам лет?',
       fieldKey: 'age',
+      keyboardType: TextInputType.number,
       inputAction: TextInputAction.next,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     ),
-    FormFieldConfig(
+    RadioFieldConfig(
       label: 'Кто вы?',
       fieldKey: 'sex',
-      inputAction: TextInputAction.done,
+      fields: [
+        RadioField(label: "Мужчина", value: "male"),
+        RadioField(label: "Женщина", value: "female"),
+        RadioField(label: "Другое", value: "other"),
+      ],
     ),
   ];
 
@@ -59,8 +98,9 @@ class _RegisterPageState extends State<RegisterPage> {
     debugPrint('Form data: $formJson');
   }
 
-  void _nextField() {
-    formValues[formFields[currentFieldIndex].fieldKey] = textController.text;
+  void _nextField([String? value]) {
+    formValues[formFields[currentFieldIndex].fieldKey] =
+        value ?? textController.text;
 
     if (currentFieldIndex < formFields.length - 1) {
       setState(() {
@@ -94,6 +134,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentField = formFields[currentFieldIndex];
+
     return Scaffold(
       body: SafeArea(
         child: Container(
@@ -101,7 +143,9 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Stack(
             children: [
               RegisterTextField(
-                label: formFields[currentFieldIndex].label,
+                label: currentField.label,
+                inputAction: currentField.inputAction,
+                onSubmitted: _nextField,
                 controller: textController,
               ),
               if (currentFieldIndex > 0)
@@ -146,7 +190,7 @@ class _RegisterPageState extends State<RegisterPage> {
               Container(
                 margin: const EdgeInsets.only(
                   bottom: (Config.basePadding * 2),
-                  top: 12,
+                  top: Config.basePadding,
                 ),
                 child: Text(
                   'У меня есть аккаунт',
@@ -167,16 +211,20 @@ class RegisterTextField extends StatelessWidget {
   const RegisterTextField({
     super.key,
     required this.label,
-    this.controller,
-    this.obscureText = false,
     this.inputAction = TextInputAction.done,
+    this.obscureText = false,
+    this.controller,
+    this.onSubmitted,
     this.keyboardType,
+    this.inputFormatters,
   });
 
-  final TextInputAction inputAction;
-  final TextEditingController? controller;
   final String label;
   final bool obscureText;
+  final List<TextInputFormatter>? inputFormatters;
+  final void Function(String)? onSubmitted;
+  final TextEditingController? controller;
+  final TextInputAction? inputAction;
   final TextInputType? keyboardType;
 
   @override
@@ -202,7 +250,9 @@ class RegisterTextField extends StatelessWidget {
           alignment: FractionalOffset.center,
           child: TextField(
             controller: controller,
+            onSubmitted: onSubmitted,
             textInputAction: inputAction,
+            inputFormatters: inputFormatters,
             style: textTheme.headlineSmall,
             textAlign: TextAlign.center,
             keyboardType: keyboardType,
@@ -215,6 +265,34 @@ class RegisterTextField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class RegisterRadioField extends StatelessWidget {
+  const RegisterRadioField({
+    super.key,
+    required this.fields,
+    required this.groupValue,
+    required this.onChanged,
+  });
+
+  final List<RadioField> fields;
+  final String groupValue;
+  final void Function(String?) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children:
+          fields.map((field) {
+            return RadioListTile(
+              title: Text(field.label),
+              value: field.value,
+              groupValue: groupValue,
+              onChanged: onChanged,
+            );
+          }).toList(),
     );
   }
 }
