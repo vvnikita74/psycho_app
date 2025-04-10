@@ -99,9 +99,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _nextField([String? value]) {
-    formValues[formFields[currentFieldIndex].fieldKey] =
-        value ?? textController.text;
-
     if (currentFieldIndex < formFields.length - 1) {
       setState(() {
         currentFieldIndex++;
@@ -113,12 +110,13 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _prevField() {
-    formValues[formFields[currentFieldIndex].fieldKey] = textController.text;
+  void _handleChange(String? value) {
+    formValues[formFields[currentFieldIndex].fieldKey] = value ?? '';
+  }
 
+  void _prevField() {
     if (currentFieldIndex != 0) {
       setState(() {
-        textController.clear();
         currentFieldIndex--;
         textController.text =
             formValues[formFields[currentFieldIndex].fieldKey] ?? '';
@@ -142,11 +140,12 @@ class _RegisterPageState extends State<RegisterPage> {
           padding: Config.contentPadding,
           child: Stack(
             children: [
-              RegisterTextField(
-                label: currentField.label,
-                inputAction: currentField.inputAction,
-                onSubmitted: _nextField,
+              buildField(
+                currentField,
                 controller: textController,
+                onSubmitted: _nextField,
+                onChange: _handleChange,
+                currentValue: formValues[currentField.fieldKey] ?? '',
               ),
               if (currentFieldIndex > 0)
                 Positioned(
@@ -215,6 +214,7 @@ class RegisterTextField extends StatelessWidget {
     this.obscureText = false,
     this.controller,
     this.onSubmitted,
+    this.onChanged,
     this.keyboardType,
     this.inputFormatters,
   });
@@ -223,6 +223,7 @@ class RegisterTextField extends StatelessWidget {
   final bool obscureText;
   final List<TextInputFormatter>? inputFormatters;
   final void Function(String)? onSubmitted;
+  final void Function(String)? onChanged;
   final TextEditingController? controller;
   final TextInputAction? inputAction;
   final TextInputType? keyboardType;
@@ -251,6 +252,7 @@ class RegisterTextField extends StatelessWidget {
           child: TextField(
             controller: controller,
             onSubmitted: onSubmitted,
+            onChanged: onChanged,
             textInputAction: inputAction,
             inputFormatters: inputFormatters,
             style: textTheme.headlineSmall,
@@ -269,30 +271,108 @@ class RegisterTextField extends StatelessWidget {
   }
 }
 
-class RegisterRadioField extends StatelessWidget {
+class RegisterRadioField extends StatefulWidget {
   const RegisterRadioField({
     super.key,
+    required this.initialValue,
+    required this.label,
     required this.fields,
-    required this.groupValue,
     required this.onChanged,
   });
 
+  final String initialValue;
+  final String label;
   final List<RadioField> fields;
-  final String groupValue;
   final void Function(String?) onChanged;
 
   @override
+  State<RegisterRadioField> createState() => _RegisterRadioFieldState();
+}
+
+class _RegisterRadioFieldState extends State<RegisterRadioField> {
+  String _radioValue = '';
+
+  void onChanged(String? value) {
+    setState(() {
+      _radioValue = value ?? '';
+    });
+
+    widget.onChanged(value);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _radioValue = widget.initialValue;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final TextTheme textTheme = Theme.of(context).textTheme;
     return Column(
-      children:
-          fields.map((field) {
-            return RadioListTile(
-              title: Text(field.label),
-              value: field.value,
-              groupValue: groupValue,
-              onChanged: onChanged,
-            );
-          }).toList(),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: Config.basePadding),
+          child: Text(
+            widget.label,
+            textAlign: TextAlign.center,
+            style: textTheme.headlineMedium,
+          ),
+        ),
+        ...widget.fields.map((field) {
+          return RadioListTile(
+            title: Text(field.label, style: textTheme.labelMedium),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: Config.basePadding,
+            ),
+            dense: true,
+            overlayColor: const WidgetStatePropertyAll<Color>(
+              Config.accentColor,
+            ),
+            activeColor: Config.accentColor,
+            visualDensity: const VisualDensity(
+              horizontal: VisualDensity.minimumDensity,
+              vertical: VisualDensity.minimumDensity,
+            ),
+            fillColor: const WidgetStatePropertyAll<Color>(Config.accentColor),
+            value: field.value,
+            groupValue: _radioValue,
+            onChanged: onChanged,
+          );
+        }),
+      ],
     );
+  }
+}
+
+Widget buildField(
+  RegisterFieldConfig config, {
+  required TextEditingController controller,
+  required void Function(String?) onSubmitted,
+  required void Function(String?) onChange,
+  required String currentValue,
+}) {
+  switch (config.fieldType) {
+    case FieldType.text:
+      final textConfig = config as TextFieldConfig;
+      return RegisterTextField(
+        label: textConfig.label,
+        controller: controller,
+        onSubmitted: onSubmitted,
+        onChanged: onChange,
+        inputAction: textConfig.inputAction,
+        keyboardType: textConfig.keyboardType,
+        inputFormatters: textConfig.inputFormatters,
+        obscureText: textConfig.obscureText ?? false,
+      );
+    case FieldType.radio:
+      final radioConfig = config as RadioFieldConfig;
+      return RegisterRadioField(
+        initialValue: currentValue,
+        label: radioConfig.label,
+        fields: radioConfig.fields,
+        onChanged: onChange,
+      );
   }
 }

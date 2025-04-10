@@ -20,7 +20,9 @@ class App extends StatelessWidget {
         textTheme: TextTheme(
           headlineMedium: Config.headlineStyle,
           headlineSmall: Config.headlineStyle,
+          labelMedium: Config.labelStyle,
         ),
+        listTileTheme: ListTileThemeData(horizontalTitleGap: 8),
       ),
       home: LoadingPage(),
       debugShowCheckedModeBanner: false,

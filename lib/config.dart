@@ -6,6 +6,7 @@ class Config {
   static const Color headlineColor = Color(0xFFFCFCFE);
   static const Color buttonTextColor = Color(0xFF1582B4);
   static const Color backgroundLightColor = Color(0xD9C5EEFF);
+  static const Color accentColor = Color(0xFFFFF2B1);
   static const double basePadding = 12.0;
 
   static const EdgeInsets contentPadding = EdgeInsets.all(basePadding);
@@ -26,6 +27,13 @@ class Config {
     height: 1.0,
     fontWeight: FontWeight.w700,
     fontSize: 24,
+  );
+
+  static TextStyle labelStyle = GoogleFonts.rubik(
+    color: headlineColor,
+    height: 1.0,
+    fontWeight: FontWeight.w500,
+    fontSize: 16,
   );
 
   static TextStyle buttonTextStyle = GoogleFonts.montserrat(
