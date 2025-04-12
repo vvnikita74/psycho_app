@@ -7,23 +7,25 @@ import 'dart:convert';
 
 enum FieldType { text, radio }
 
-class RadioField {
-  final String label;
-  final String value;
-
-  RadioField({required this.label, required this.value});
-}
-
 class RegisterFieldConfig {
   final String label;
   final String fieldKey;
   final FieldType fieldType;
+  final bool Function(String value)? validate;
 
   RegisterFieldConfig({
     required this.fieldType,
     required this.label,
     required this.fieldKey,
+    this.validate,
   });
+}
+
+class RadioField {
+  final String label;
+  final String value;
+
+  RadioField({required this.label, required this.value});
 }
 
 class RadioFieldConfig extends RegisterFieldConfig {
@@ -88,6 +90,19 @@ class _RegisterPageState extends State<RegisterPage> {
         RadioField(label: "Другое", value: "other"),
       ],
     ),
+    TextFieldConfig(
+      label: 'Ваш электронный адрес',
+      fieldKey: 'email',
+      keyboardType: TextInputType.emailAddress,
+      inputAction: TextInputAction.next,
+    ),
+    TextFieldConfig(
+      label: 'Введите пароль',
+      fieldKey: 'password',
+      keyboardType: TextInputType.text,
+      obscureText: true,
+      inputAction: TextInputAction.next,
+    ),
   ];
 
   int currentFieldIndex = 0;
@@ -99,11 +114,14 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _nextField([String? value]) {
+    final currentField = formFields[currentFieldIndex];
+
+    // currentField.validationRegex
+
     if (currentFieldIndex < formFields.length - 1) {
       setState(() {
         currentFieldIndex++;
-        textController.text =
-            formValues[formFields[currentFieldIndex].fieldKey] ?? '';
+        textController.text = formValues[currentField.fieldKey] ?? '';
       });
     } else {
       _handleSubmit();
@@ -124,6 +142,37 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  Widget _buildField(
+    RegisterFieldConfig config, {
+    required TextEditingController controller,
+    required void Function(String?) onSubmitted,
+    required void Function(String?) onChange,
+    required String currentValue,
+  }) {
+    switch (config.fieldType) {
+      case FieldType.text:
+        final textConfig = config as TextFieldConfig;
+        return RegisterTextField(
+          label: textConfig.label,
+          controller: controller,
+          onSubmitted: onSubmitted,
+          onChanged: onChange,
+          inputAction: textConfig.inputAction,
+          keyboardType: textConfig.keyboardType,
+          inputFormatters: textConfig.inputFormatters,
+          obscureText: textConfig.obscureText ?? false,
+        );
+      case FieldType.radio:
+        final radioConfig = config as RadioFieldConfig;
+        return RegisterRadioField(
+          initialValue: currentValue,
+          label: radioConfig.label,
+          fields: radioConfig.fields,
+          onChanged: onChange,
+        );
+    }
+  }
+
   @override
   void dispose() {
     textController.dispose();
@@ -140,7 +189,7 @@ class _RegisterPageState extends State<RegisterPage> {
           padding: Config.contentPadding,
           child: Stack(
             children: [
-              buildField(
+              _buildField(
                 currentField,
                 controller: textController,
                 onSubmitted: _nextField,
@@ -343,36 +392,5 @@ class _RegisterRadioFieldState extends State<RegisterRadioField> {
         }),
       ],
     );
-  }
-}
-
-Widget buildField(
-  RegisterFieldConfig config, {
-  required TextEditingController controller,
-  required void Function(String?) onSubmitted,
-  required void Function(String?) onChange,
-  required String currentValue,
-}) {
-  switch (config.fieldType) {
-    case FieldType.text:
-      final textConfig = config as TextFieldConfig;
-      return RegisterTextField(
-        label: textConfig.label,
-        controller: controller,
-        onSubmitted: onSubmitted,
-        onChanged: onChange,
-        inputAction: textConfig.inputAction,
-        keyboardType: textConfig.keyboardType,
-        inputFormatters: textConfig.inputFormatters,
-        obscureText: textConfig.obscureText ?? false,
-      );
-    case FieldType.radio:
-      final radioConfig = config as RadioFieldConfig;
-      return RegisterRadioField(
-        initialValue: currentValue,
-        label: radioConfig.label,
-        fields: radioConfig.fields,
-        onChanged: onChange,
-      );
   }
 }
