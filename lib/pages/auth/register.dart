@@ -7,7 +7,7 @@ import 'dart:convert';
 
 enum FieldType { text, radio }
 
-class RegisterFieldConfig {
+abstract class RegisterFieldConfig {
   final String label;
   final String fieldKey;
   final FieldType fieldType;
@@ -32,15 +32,15 @@ class RadioFieldConfig extends RegisterFieldConfig {
   final List<RadioField> fields;
 
   RadioFieldConfig({
-    super.fieldType = FieldType.radio,
     required super.fieldKey,
     required super.label,
     required this.fields,
+    super.fieldType = FieldType.radio,
   });
 }
 
 class TextFieldConfig extends RegisterFieldConfig {
-  final bool? obscureText;
+  final bool obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? inputAction;
   final List<TextInputFormatter>? inputFormatters;
@@ -49,7 +49,7 @@ class TextFieldConfig extends RegisterFieldConfig {
     super.fieldType = FieldType.text,
     required super.label,
     required super.fieldKey,
-    this.obscureText,
+    this.obscureText = false,
     this.inputAction,
     this.keyboardType,
     this.inputFormatters,
@@ -160,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
           inputAction: textConfig.inputAction,
           keyboardType: textConfig.keyboardType,
           inputFormatters: textConfig.inputFormatters,
-          obscureText: textConfig.obscureText ?? false,
+          obscureText: textConfig.obscureText,
         );
       case FieldType.radio:
         final radioConfig = config as RadioFieldConfig;
@@ -185,7 +185,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     return Scaffold(
       body: SafeArea(
-        child: Container(
+        child: Padding(
           padding: Config.contentPadding,
           child: Stack(
             children: [
@@ -256,18 +256,6 @@ class _RegisterPageState extends State<RegisterPage> {
 }
 
 class RegisterTextField extends StatelessWidget {
-  const RegisterTextField({
-    super.key,
-    required this.label,
-    this.inputAction = TextInputAction.done,
-    this.obscureText = false,
-    this.controller,
-    this.onSubmitted,
-    this.onChanged,
-    this.keyboardType,
-    this.inputFormatters,
-  });
-
   final String label;
   final bool obscureText;
   final List<TextInputFormatter>? inputFormatters;
@@ -276,6 +264,18 @@ class RegisterTextField extends StatelessWidget {
   final TextEditingController? controller;
   final TextInputAction? inputAction;
   final TextInputType? keyboardType;
+
+  const RegisterTextField({
+    required this.label,
+    super.key,
+    this.inputAction = TextInputAction.done,
+    this.obscureText = false,
+    this.controller,
+    this.onSubmitted,
+    this.onChanged,
+    this.keyboardType,
+    this.inputFormatters,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -321,18 +321,18 @@ class RegisterTextField extends StatelessWidget {
 }
 
 class RegisterRadioField extends StatefulWidget {
-  const RegisterRadioField({
-    super.key,
-    required this.initialValue,
-    required this.label,
-    required this.fields,
-    required this.onChanged,
-  });
-
   final String initialValue;
   final String label;
   final List<RadioField> fields;
   final void Function(String?) onChanged;
+
+  const RegisterRadioField({
+    required this.initialValue,
+    required this.label,
+    required this.fields,
+    required this.onChanged,
+    super.key,
+  });
 
   @override
   State<RegisterRadioField> createState() => _RegisterRadioFieldState();
@@ -361,8 +361,8 @@ class _RegisterRadioFieldState extends State<RegisterRadioField> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          margin: const EdgeInsets.only(bottom: Config.basePadding),
+        Padding(
+          padding: const EdgeInsets.only(bottom: Config.basePadding),
           child: Text(
             widget.label,
             textAlign: TextAlign.center,
