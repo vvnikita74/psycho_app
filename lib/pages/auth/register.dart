@@ -5,16 +5,12 @@ import 'package:psycho_app/config.dart';
 
 import 'dart:convert';
 
-enum FieldType { text, radio }
-
-abstract class RegisterFieldConfig {
+sealed class RegisterFieldConfig {
   final String label;
   final String fieldKey;
-  final FieldType fieldType;
   final bool Function(String value)? validate;
 
   RegisterFieldConfig({
-    required this.fieldType,
     required this.label,
     required this.fieldKey,
     this.validate,
@@ -35,7 +31,6 @@ class RadioFieldConfig extends RegisterFieldConfig {
     required super.fieldKey,
     required super.label,
     required this.fields,
-    super.fieldType = FieldType.radio,
   });
 }
 
@@ -46,10 +41,10 @@ class TextFieldConfig extends RegisterFieldConfig {
   final List<TextInputFormatter>? inputFormatters;
 
   TextFieldConfig({
-    super.fieldType = FieldType.text,
     required super.label,
     required super.fieldKey,
     this.obscureText = false,
+    super.validate,
     this.inputAction,
     this.keyboardType,
     this.inputFormatters,
@@ -71,15 +66,20 @@ class _RegisterPageState extends State<RegisterPage> {
       fieldKey: 'name',
       inputAction: TextInputAction.next,
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Zа-яА-Я]')),
+        FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Zа-яА-ЯёЁ\s'-]")),
+        LengthLimitingTextInputFormatter(30),
       ],
     ),
     TextFieldConfig(
       label: 'Сколько вам лет?',
       fieldKey: 'age',
+      // regExp: RegExp(r"^(1[0-4][0-9]|150|[1-9][0-9]?)$"),
       keyboardType: TextInputType.number,
       inputAction: TextInputAction.next,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(3),
+      ],
     ),
     RadioFieldConfig(
       label: 'Кто вы?',
@@ -93,12 +93,15 @@ class _RegisterPageState extends State<RegisterPage> {
     TextFieldConfig(
       label: 'Ваш электронный адрес',
       fieldKey: 'email',
+      // regExp: RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"),
       keyboardType: TextInputType.emailAddress,
       inputAction: TextInputAction.next,
     ),
     TextFieldConfig(
       label: 'Введите пароль',
       fieldKey: 'password',
+      // regExp: RegExp(r"^(?=.*[A-Za-z])(?=.*\d).{8,30}$"),
+      inputFormatters: [LengthLimitingTextInputFormatter(30)],
       keyboardType: TextInputType.text,
       obscureText: true,
       inputAction: TextInputAction.next,
@@ -113,15 +116,19 @@ class _RegisterPageState extends State<RegisterPage> {
     debugPrint('Form data: $formJson');
   }
 
-  void _nextField([String? value]) {
-    final currentField = formFields[currentFieldIndex];
+  void _nextField([String? _]) {
+    // final currentField = formFields[currentFieldIndex];
+    // final currentValue = formValues[currentField.fieldKey];
 
-    // currentField.validationRegex
+    // if (currentField.regExp?.hasMatch(currentValue ?? '') ?? false) {
+    //   return;
+    // }
 
     if (currentFieldIndex < formFields.length - 1) {
       setState(() {
         currentFieldIndex++;
-        textController.text = formValues[currentField.fieldKey] ?? '';
+        textController.text =
+            formValues[formFields[currentFieldIndex].fieldKey] ?? '';
       });
     } else {
       _handleSubmit();
@@ -145,32 +152,28 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildField(
     RegisterFieldConfig config, {
     required TextEditingController controller,
-    required void Function(String?) onSubmitted,
-    required void Function(String?) onChange,
+    required void Function(String? value) onSubmitted,
+    required void Function(String? value) onChange,
     required String currentValue,
   }) {
-    switch (config.fieldType) {
-      case FieldType.text:
-        final textConfig = config as TextFieldConfig;
-        return RegisterTextField(
-          label: textConfig.label,
-          controller: controller,
-          onSubmitted: onSubmitted,
-          onChanged: onChange,
-          inputAction: textConfig.inputAction,
-          keyboardType: textConfig.keyboardType,
-          inputFormatters: textConfig.inputFormatters,
-          obscureText: textConfig.obscureText,
-        );
-      case FieldType.radio:
-        final radioConfig = config as RadioFieldConfig;
-        return RegisterRadioField(
-          initialValue: currentValue,
-          label: radioConfig.label,
-          fields: radioConfig.fields,
-          onChanged: onChange,
-        );
-    }
+    return switch (config) {
+      TextFieldConfig() => RegisterTextField(
+        label: config.label,
+        controller: controller,
+        onSubmitted: onSubmitted,
+        onChanged: onChange,
+        inputAction: config.inputAction,
+        keyboardType: config.keyboardType,
+        inputFormatters: config.inputFormatters,
+        obscureText: config.obscureText,
+      ),
+      RadioFieldConfig() => RegisterRadioField(
+        initialValue: currentValue,
+        label: config.label,
+        fields: config.fields,
+        onChanged: onChange,
+      ),
+    };
   }
 
   @override
