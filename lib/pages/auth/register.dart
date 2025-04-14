@@ -8,12 +8,12 @@ import 'dart:convert';
 sealed class RegisterFieldConfig {
   final String label;
   final String fieldKey;
-  final bool Function(String value)? validate;
+  final String? Function(String value)? validator;
 
   RegisterFieldConfig({
     required this.label,
     required this.fieldKey,
-    this.validate,
+    this.validator,
   });
 }
 
@@ -31,6 +31,7 @@ class RadioFieldConfig extends RegisterFieldConfig {
     required super.fieldKey,
     required super.label,
     required this.fields,
+    super.validator,
   });
 }
 
@@ -43,8 +44,8 @@ class TextFieldConfig extends RegisterFieldConfig {
   TextFieldConfig({
     required super.label,
     required super.fieldKey,
+    super.validator,
     this.obscureText = false,
-    super.validate,
     this.inputAction,
     this.keyboardType,
     this.inputFormatters,
@@ -69,17 +70,29 @@ class _RegisterPageState extends State<RegisterPage> {
         FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Zа-яА-ЯёЁ\s'-]")),
         LengthLimitingTextInputFormatter(30),
       ],
+      validator: (value) {
+        if (value.isEmpty) return 'Пожалуйста, введите имя';
+        if (value.length < 2) return 'Имя слишком короткое';
+        return null;
+      },
     ),
     TextFieldConfig(
       label: 'Сколько вам лет?',
       fieldKey: 'age',
-      // regExp: RegExp(r"^(1[0-4][0-9]|150|[1-9][0-9]?)$"),
       keyboardType: TextInputType.number,
       inputAction: TextInputAction.next,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(3),
       ],
+      validator: (value) {
+        final age = int.tryParse(value) ?? 0;
+
+        if (age == 0) return 'Пожалуйста, введите возраст';
+        if (age < 10) return 'Минимальный возраст - 10 лет';
+        if (age > 150) return 'Пожалуйста, введите реальный возраст';
+        return null;
+      },
     ),
     RadioFieldConfig(
       label: 'Кто вы?',
@@ -89,22 +102,41 @@ class _RegisterPageState extends State<RegisterPage> {
         RadioField(label: "Женщина", value: "female"),
         RadioField(label: "Другое", value: "other"),
       ],
+      validator: (value) {
+        if (value.isEmpty) return 'Пожалуйста, выберите вариант';
+        return null;
+      },
     ),
     TextFieldConfig(
       label: 'Ваш электронный адрес',
       fieldKey: 'email',
-      // regExp: RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"),
       keyboardType: TextInputType.emailAddress,
       inputAction: TextInputAction.next,
+      validator: (value) {
+        if (value.isEmpty) return 'Пожалуйста, введите email';
+        if (!RegExp(
+          r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+        ).hasMatch(value)) {
+          return 'Введите корректный email';
+        }
+        return null;
+      },
     ),
     TextFieldConfig(
       label: 'Введите пароль',
       fieldKey: 'password',
-      // regExp: RegExp(r"^(?=.*[A-Za-z])(?=.*\d).{8,30}$"),
       inputFormatters: [LengthLimitingTextInputFormatter(30)],
       keyboardType: TextInputType.text,
       obscureText: true,
       inputAction: TextInputAction.next,
+      validator: (value) {
+        if (value.isEmpty) return 'Пожалуйста, введите пароль';
+        if (value.length < 8) return 'Пароль должен быть не менее 8 символов';
+        if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)').hasMatch(value)) {
+          return 'Пароль должен содержать буквы и цифры';
+        }
+        return null;
+      },
     ),
   ];
 
@@ -117,13 +149,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _nextField([String? _]) {
-    // final currentField = formFields[currentFieldIndex];
-    // final currentValue = formValues[currentField.fieldKey];
-
-    // if (currentField.regExp?.hasMatch(currentValue ?? '') ?? false) {
-    //   return;
-    // }
-
     if (currentFieldIndex < formFields.length - 1) {
       setState(() {
         currentFieldIndex++;
