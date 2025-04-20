@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:psycho_app/pages/loading.dart';
-
 import 'config.dart';
+
+import 'package:psycho_app/features/boot/presentation/screen.dart';
+import 'package:psycho_app/features/register/presentation/screen.dart';
 
 void main() {
   runApp(const App());
@@ -24,7 +25,7 @@ class App extends StatelessWidget {
         ),
         listTileTheme: ListTileThemeData(horizontalTitleGap: 8),
       ),
-      home: LoadingPage(),
+      home: BootPage(nextPage: RegisterPage()),
       debugShowCheckedModeBanner: false,
     );
   }

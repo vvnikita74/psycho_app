@@ -1,56 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:psycho_app/config.dart';
-
 import 'dart:convert';
 
-sealed class RegisterFieldConfig {
-  final String label;
-  final String fieldKey;
-  final String? Function(String value)? validator;
-
-  RegisterFieldConfig({
-    required this.label,
-    required this.fieldKey,
-    this.validator,
-  });
-}
-
-class RadioField {
-  final String label;
-  final String value;
-
-  RadioField({required this.label, required this.value});
-}
-
-class RadioFieldConfig extends RegisterFieldConfig {
-  final List<RadioField> fields;
-
-  RadioFieldConfig({
-    required super.fieldKey,
-    required super.label,
-    required this.fields,
-    super.validator,
-  });
-}
-
-class TextFieldConfig extends RegisterFieldConfig {
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final TextInputAction? inputAction;
-  final List<TextInputFormatter>? inputFormatters;
-
-  TextFieldConfig({
-    required super.label,
-    required super.fieldKey,
-    super.validator,
-    this.obscureText = false,
-    this.inputAction,
-    this.keyboardType,
-    this.inputFormatters,
-  });
-}
+import './widgets/index.dart';
+import '../domain/register_field_config.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -263,8 +217,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Text('Продолжить', style: Config.buttonTextStyle),
                 ),
               ),
-              Container(
-                margin: const EdgeInsets.only(
+              Padding(
+                padding: const EdgeInsets.only(
                   bottom: (Config.basePadding * 2),
                   top: Config.basePadding,
                 ),
@@ -279,146 +233,6 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class RegisterTextField extends StatelessWidget {
-  final String label;
-  final bool obscureText;
-  final List<TextInputFormatter>? inputFormatters;
-  final void Function(String)? onSubmitted;
-  final void Function(String)? onChanged;
-  final TextEditingController? controller;
-  final TextInputAction? inputAction;
-  final TextInputType? keyboardType;
-
-  const RegisterTextField({
-    required this.label,
-    super.key,
-    this.inputAction = TextInputAction.done,
-    this.obscureText = false,
-    this.controller,
-    this.onSubmitted,
-    this.onChanged,
-    this.keyboardType,
-    this.inputFormatters,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
-    const inputUnderline = UnderlineInputBorder(
-      borderSide: BorderSide(color: Config.headlineColor, width: 2.0),
-    );
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: textTheme.headlineMedium,
-          ),
-        ),
-        FractionallySizedBox(
-          widthFactor: 0.4,
-          alignment: FractionalOffset.center,
-          child: TextField(
-            controller: controller,
-            onSubmitted: onSubmitted,
-            onChanged: onChanged,
-            textInputAction: inputAction,
-            inputFormatters: inputFormatters,
-            style: textTheme.headlineSmall,
-            textAlign: TextAlign.center,
-            keyboardType: keyboardType,
-            obscureText: obscureText,
-            cursorColor: Config.headlineColor,
-            decoration: InputDecoration(
-              enabledBorder: inputUnderline,
-              focusedBorder: inputUnderline,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class RegisterRadioField extends StatefulWidget {
-  final String initialValue;
-  final String label;
-  final List<RadioField> fields;
-  final void Function(String?) onChanged;
-
-  const RegisterRadioField({
-    required this.initialValue,
-    required this.label,
-    required this.fields,
-    required this.onChanged,
-    super.key,
-  });
-
-  @override
-  State<RegisterRadioField> createState() => _RegisterRadioFieldState();
-}
-
-class _RegisterRadioFieldState extends State<RegisterRadioField> {
-  String _radioValue = '';
-
-  void onChanged(String? value) {
-    setState(() {
-      _radioValue = value ?? '';
-    });
-
-    widget.onChanged(value);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _radioValue = widget.initialValue;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: Config.basePadding),
-          child: Text(
-            widget.label,
-            textAlign: TextAlign.center,
-            style: textTheme.headlineMedium,
-          ),
-        ),
-        ...widget.fields.map((field) {
-          return RadioListTile(
-            title: Text(field.label, style: textTheme.labelMedium),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: Config.basePadding,
-            ),
-            dense: true,
-            overlayColor: const WidgetStatePropertyAll<Color>(
-              Config.accentColor,
-            ),
-            activeColor: Config.accentColor,
-            visualDensity: const VisualDensity(
-              horizontal: VisualDensity.minimumDensity,
-              vertical: VisualDensity.minimumDensity,
-            ),
-            fillColor: const WidgetStatePropertyAll<Color>(Config.accentColor),
-            value: field.value,
-            groupValue: _radioValue,
-            onChanged: onChanged,
-          );
-        }),
-      ],
     );
   }
 }

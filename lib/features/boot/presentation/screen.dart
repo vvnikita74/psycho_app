@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'auth/register.dart';
 
-class LoadingPage extends StatefulWidget {
-  const LoadingPage({super.key});
+class BootPage extends StatefulWidget {
+  final Widget nextPage;
+
+  const BootPage({super.key, required this.nextPage});
 
   @override
-  State<LoadingPage> createState() => _LoadingPageState();
+  State<BootPage> createState() => _BootPageState();
 }
 
-class _LoadingPageState extends State<LoadingPage> {
+class _BootPageState extends State<BootPage> {
   @override
   void initState() {
     super.initState();
@@ -16,7 +17,7 @@ class _LoadingPageState extends State<LoadingPage> {
       if (mounted) {
         return Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const RegisterPage()),
+          MaterialPageRoute(builder: (context) => widget.nextPage),
         );
       }
     });
